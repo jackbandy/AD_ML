@@ -14,6 +14,8 @@ import tensorflow as tf
 Dataset = collections.namedtuple('Dataset', ['data', 'target'])
 label_numbers = {'normal':0,'dos':1,'probe':2,'u2r':3,'r2l':4}
 
+
+
 def main():
 
     TRAINING_FILE_20P = '20 Percent Training Set.csv'
@@ -32,6 +34,8 @@ def main():
     unit_trials.append([10,10])
     unit_trials.append([20,20])
     unit_trials.append([40,40])
+    unit_trials.append([10,20])
+    unit_trials.append([20,40])
     unit_trials.append([100,100])
     unit_trials.append([10,20,10])
     unit_trials.append([50,100,50])
@@ -42,18 +46,19 @@ def main():
 
 
 
+
+
 def run_dnn_with_units(training_set,test_set,units_array):
     # as per tensorflow's recommendation / sample code
     x_train, x_test, y_train, y_test = training_set.data, test_set.data, \
               training_set.target, test_set.target
 
-
-    #Build a 3-layer DNN! (10, 20, 20 units)
+    #Build a DNN!
     start = time.clock()
     classifier = tf.contrib.learn.DNNClassifier(hidden_units=units_array)
     classifier.fit(x=x_train, y=y_train, steps=200)
     stop = time.clock()
-    print('-------------------------')
+    print('-------------------------------------')
     print('DNN with hidden units: ' + str(units_array))
     print('Seconds elapsed: {}'.format(stop - start))
 
@@ -61,7 +66,10 @@ def run_dnn_with_units(training_set,test_set,units_array):
     print('Accuracy: {0:f}'.format(accuracy_stuff['accuracy']))
     print('Other stuff: ' + str(accuracy_stuff))
 
-    print('-------------------------')
+    print('-------------------------------------')
+
+
+
 
 
 def csv_to_array(csv_file):
@@ -98,13 +106,18 @@ def csv_to_array(csv_file):
         if not label == 'normal':
             label = label_groups[label]
         label_number = label_numbers[label]
+
+        # Make all non-normal packets anomalies
         if label_number != 0: label_number = 1
+
         labels.append(np.int(label_number))
         features.append(np.array(tmp))
 
     labels = np.array(labels)
     features = np.array(features)
     return (Dataset(features,labels))
+
+
 
 
 
