@@ -1,4 +1,4 @@
-'''test_ml_script.py: testing anomaly detection on NSL-KDD'''
+'''test_ml_script.py: testng anomaly detection on NSL-KDD'''
 '''adapted from http://karpathy.github.io/neuralnets/'''
 __author__ = "Jack Bandy"
 __email__ = "jaxterb@gmail.com"
@@ -7,11 +7,12 @@ __email__ = "jaxterb@gmail.com"
 import numpy as np
 import csv
 import collections
+import time
 # Let the tensors flow
 import tensorflow as tf
 
 Dataset = collections.namedtuple('Dataset', ['data', 'target'])
-
+label_numbers = {'normal':0,'dos':1,'probe':2,'u2r':3,'r2l':4}
 
 def main():
 
@@ -28,11 +29,15 @@ def main():
               training_set.target, test_set.target
 
     #Build a 3-layer DNN! (10, 20, 20 units)
+    start = time.clock()
     classifier = tf.contrib.learn.DNNClassifier(hidden_units=[10,20,10])
     classifier.fit(x=x_train, y=y_train, steps=200)
+    stop = time.clock()
+    print('Seconds elapsed: {}'.format(stop - start))
 
-    accuracy_score = classifier.evaluate(x=x_test, y=y_test)["accuracy"]
-    print('Accuracy: {0:f}'.format(accuracy_score))
+    accuracy_stuff = classifier.evaluate(x=x_test, y=y_test)
+    print('Accuracy: {0:f}'.format(accuracy_stuff['accuracy']))
+    print('Other stuff: ' + str(accuracy_stuff))
 
 
 
@@ -42,10 +47,11 @@ def csv_to_array(csv_file):
     protocol_map = {}
     service_map = {}
     flag_map = {}
-    label_map = {}
 
     labels = []
     features = []
+
+    label_groups = get_label_groups()
 
     for packet in packets:
         tmp = []
@@ -64,7 +70,13 @@ def csv_to_array(csv_file):
         # Last item in the list is unneeded
         del tmp[len(tmp)-1]
         # Second-to-last-item is the label
-        labels.append(np.int(generate_number(tmp.pop(),label_map)))
+        label = tmp.pop()
+        # Figure out which group it falls into
+        if not label == 'normal':
+            label = label_groups[label]
+        label_number = label_numbers[label]
+        if label_number != 0: label_number = 1
+        labels.append(np.int(label_number))
         features.append(np.array(tmp))
 
     labels = np.array(labels)
@@ -82,10 +94,6 @@ def generate_number(the_str,the_map):
     return the_map[the_str]
 
 
-
-
-if __name__ == '__main__':
-    main()
 
 
 def feature_names(): 
@@ -140,7 +148,7 @@ def feature_names():
 
 
 
-def label_groups():
+def get_label_groups():
     return  {	    # denial of service attacks
 					'back':'dos',
 					'land':'dos',
@@ -160,7 +168,7 @@ def label_groups():
 					'mscan':'probe',
 					'saint':'probe',
 					# root to local (r2l) attacks
-					'guess_password':'r2l',
+					'guess_passwd':'r2l',
 					'ftp_write':'r2l',
 					'imap':'r2l',
 					'phf':'r2l',
@@ -185,3 +193,8 @@ def label_groups():
 					'ps':'u2r'
 			}
 
+
+
+
+if __name__ == '__main__':
+    main()
