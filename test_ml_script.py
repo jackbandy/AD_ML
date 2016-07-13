@@ -21,23 +21,24 @@ def main():
     TRAINING_FILE_FULL = 'KDDTrain+.txt'
     TEST_FILE = 'KDDTest+.txt'
 
-    training_set = csv_to_array(TRAINING_FILE_FULL)
-    test_set = csv_to_array(TRAINING_FILE_SMALL)
-
-    # as per tensorflow's recommendation / sample code
-    x_train, x_test, y_train, y_test = training_set.data, test_set.data, \
-              training_set.target, test_set.target
+    the_training_set = csv_to_array(TRAINING_FILE_FULL)
+    the_test_set = csv_to_array(TRAINING_FILE_SMALL)
 
     unit_trials = []
     unit_trials.append([10,20,10])
     unit_trials.append([100,200,100])
 
     for trial in unit_trials:
-        run_dnn_with_units(trial)
+        run_dnn_with_units(the_training_set,the_test_set,trial)
 
 
 
-def run_dnn_with_units(units_array):
+def run_dnn_with_units(training_set,test_set,units_array):
+    # as per tensorflow's recommendation / sample code
+    x_train, x_test, y_train, y_test = training_set.data, test_set.data, \
+              training_set.target, test_set.target
+
+
     #Build a 3-layer DNN! (10, 20, 20 units)
     start = time.clock()
     classifier = tf.contrib.learn.DNNClassifier(hidden_units=units_array)
@@ -51,6 +52,7 @@ def run_dnn_with_units(units_array):
     print('Accuracy: {0:f}'.format(accuracy_stuff['accuracy']))
     print('Other stuff: ' + str(accuracy_stuff))
 
+    print('-------------------------')
 
 
 def csv_to_array(csv_file):
