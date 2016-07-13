@@ -18,10 +18,10 @@ def main():
 
     TRAINING_FILE_20P = '20 Percent Training Set.csv'
     TRAINING_FILE_SMALL = 'Small Training Set.csv'
-    TRAINING_FILE_FULL = 'KDDTrain+.csv'
-    TEST_FILE = 'KDDTest+.csv'
+    TRAINING_FILE_FULL = 'KDDTrain+.txt'
+    TEST_FILE = 'KDDTest+.txt'
 
-    training_set = csv_to_array(TRAINING_FILE_20P)
+    training_set = csv_to_array(TRAINING_FILE_FULL)
     test_set = csv_to_array(TRAINING_FILE_SMALL)
 
     # as per tensorflow's recommendation / sample code
