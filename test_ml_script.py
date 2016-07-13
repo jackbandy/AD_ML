@@ -179,6 +179,8 @@ def get_label_groups():
 					'udpstorm':'dos',
 					'processtable':'dos',
 					'worm':'dos',
+                    'mailbomb':'dos',
+
 					# probe attacks
 					'satan':'probe',
 					'ipsweep':'probe',
@@ -186,6 +188,7 @@ def get_label_groups():
 					'portsweep':'probe',
 					'mscan':'probe',
 					'saint':'probe',
+
 					# root to local (r2l) attacks
 					'guess_passwd':'r2l',
 					'ftp_write':'r2l',
@@ -202,6 +205,7 @@ def get_label_groups():
 					'httptunnel':'r2l',
 					'sendmail':'r2l',
 					'named':'r2l',
+
 					# user to root (u2r) attacks
 					'buffer_overflow':'u2r',
 					'loadmodule':'u2r',
