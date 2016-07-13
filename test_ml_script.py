@@ -25,6 +25,10 @@ def main():
     the_test_set = csv_to_array(TEST_FILE)
 
     unit_trials = []
+    unit_trials.append([10])
+    unit_trials.append([20])
+    unit_trials.append([40])
+    unit_trials.append([100])
     unit_trials.append([10,10])
     unit_trials.append([20,20])
     unit_trials.append([40,40])
