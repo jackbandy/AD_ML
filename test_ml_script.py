@@ -28,11 +28,23 @@ def main():
     x_train, x_test, y_train, y_test = training_set.data, test_set.data, \
               training_set.target, test_set.target
 
+    unit_trials = []
+    unit_trials.append([10,20,10])
+    unit_trials.append([100,200,100])
+
+    for trial in unit_trials:
+        run_dnn_with_units(trial)
+
+
+
+def run_dnn_with_units(units_array):
     #Build a 3-layer DNN! (10, 20, 20 units)
     start = time.clock()
-    classifier = tf.contrib.learn.DNNClassifier(hidden_units=[10,20,10])
+    classifier = tf.contrib.learn.DNNClassifier(hidden_units=units_array)
     classifier.fit(x=x_train, y=y_train, steps=200)
     stop = time.clock()
+    print('-------------------------')
+    print('DNN with hidden units: ' + str(units_array))
     print('Seconds elapsed: {}'.format(stop - start))
 
     accuracy_stuff = classifier.evaluate(x=x_test, y=y_test)
