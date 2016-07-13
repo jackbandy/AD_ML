@@ -22,10 +22,15 @@ def main():
     TEST_FILE = 'KDDTest+.txt'
 
     the_training_set = csv_to_array(TRAINING_FILE_FULL)
-    the_test_set = csv_to_array(TRAINING_FILE_SMALL)
+    the_test_set = csv_to_array(TEST_FILE)
 
     unit_trials = []
+    unit_trials.append([10,10])
+    unit_trials.append([20,20])
+    unit_trials.append([40,40])
+    unit_trials.append([100,100])
     unit_trials.append([10,20,10])
+    unit_trials.append([50,100,50])
     unit_trials.append([100,200,100])
 
     for trial in unit_trials:
