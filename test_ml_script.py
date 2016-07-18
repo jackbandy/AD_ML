@@ -27,19 +27,10 @@ def main():
     the_test_set = csv_to_array(TEST_FILE)
 
     unit_trials = []
-    unit_trials.append([10])
-    unit_trials.append([20])
-    unit_trials.append([40])
-    unit_trials.append([100])
-    unit_trials.append([10,10])
-    unit_trials.append([20,20])
-    unit_trials.append([40,40])
-    unit_trials.append([10,20])
-    unit_trials.append([20,40])
-    unit_trials.append([100,100])
-    unit_trials.append([10,20,10])
-    unit_trials.append([50,100,50])
-    unit_trials.append([100,200,100])
+    unit_trials.append([41,1])
+    unit_trials.append([41,40,40,1])
+    unit_trials.append([41,20,20,20,1])
+    unit_trials.append([41,25,20,1])
 
     for trial in unit_trials:
         run_dnn_with_units(the_training_set,the_test_set,trial)
@@ -56,7 +47,7 @@ def run_dnn_with_units(training_set,test_set,units_array):
     #Build a DNN!
     start = time.clock()
     classifier = tf.contrib.learn.DNNClassifier(hidden_units=units_array)
-    classifier.fit(x=x_train, y=y_train, steps=200)
+    classifier.fit(x=x_train, y=y_train, steps=300)
     stop = time.clock()
     print('-------------------------------------')
     print('DNN with hidden units: ' + str(units_array))
