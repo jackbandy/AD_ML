@@ -32,10 +32,10 @@ def main():
     unit_trials.append([41,20,20,20])
     unit_trials.append([41,25,20])
 
-    num_steps = []
-    num_steps.append(200)
-    num_steps.append(300)
-    num_steps.append(400)
+    step_trials = []
+    step_trials.append(200)
+    step_trials.append(300)
+    step_trials.append(400)
 
     for trial in unit_trials:
         for num_steps in step_trials:
