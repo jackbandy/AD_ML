@@ -32,14 +32,20 @@ def main():
     unit_trials.append([41,20,20,20])
     unit_trials.append([41,25,20])
 
+    num_steps = []
+    num_steps.append(200)
+    num_steps.append(300)
+    num_steps.append(400)
+
     for trial in unit_trials:
-        run_dnn_with_units(the_training_set,the_test_set,trial)
+        for num_steps in step_trials:
+            run_dnn_with_units(the_training_set,the_test_set,trial,num_steps)
 
 
 
 
 
-def run_dnn_with_units(training_set,test_set,units_array):
+def run_dnn_with_units_steps(training_set,test_set,units_array,num_steps):
     # as per tensorflow's recommendation / sample code
     x_train, x_test, y_train, y_test = training_set.data, test_set.data, \
               training_set.target, test_set.target
@@ -47,10 +53,11 @@ def run_dnn_with_units(training_set,test_set,units_array):
     #Build a DNN!
     start = time.clock()
     classifier = tf.contrib.learn.DNNClassifier(hidden_units=units_array)
-    classifier.fit(x=x_train, y=y_train, steps=200)
+    classifier.fit(x=x_train, y=y_train, steps=num_steps)
     stop = time.clock()
     print('-------------------------------------')
     print('DNN with hidden units: ' + str(units_array))
+    print('Number of steps: ' + str(num_steps))
     print('Seconds elapsed: {}'.format(stop - start))
 
     accuracy_stuff = classifier.evaluate(x=x_test, y=y_test)
