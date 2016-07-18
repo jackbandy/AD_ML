@@ -39,7 +39,7 @@ def main():
 
     for trial in unit_trials:
         for num_steps in step_trials:
-            run_dnn_with_units(the_training_set,the_test_set,trial,num_steps)
+            run_dnn_with_units_steps(the_training_set,the_test_set,trial,num_steps)
 
 
 
