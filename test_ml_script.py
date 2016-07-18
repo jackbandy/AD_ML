@@ -55,15 +55,18 @@ def main():
     test_features = binarize_features(testing_file,feature_lookups)
     training_labels = binarize_labels(training_labels,label_lookups)
     test_labels = binarize_labels(testing_labels,label_lookups)
+    print("NUMBER OF FEATURES AFTER BINARIZATION:")
+    print(len(training_features[0]))
 
     the_training_set = Dataset(training_features,training_labels)
     the_test_set = Dataset(test_features,test_labels)
 
+    num_features = len(training_features[0])
     unit_trials = []
-    unit_trials.append([41])
-    unit_trials.append([41,40,40])
-    unit_trials.append([41,20,20,20])
-    unit_trials.append([41,25,20])
+    unit_trials.append([num_features])
+    unit_trials.append([num_features,40,40])
+    unit_trials.append([num_features,20,20,20])
+    unit_trials.append([num_features,25,20])
 
     step_trials = []
     step_trials.append(200)
