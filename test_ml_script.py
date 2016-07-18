@@ -3,6 +3,8 @@
 __author__ = "Jack Bandy"
 __email__ = "jaxterb@gmail.com"
 
+#TODO: make categorical labels into binary labels (ex. 'tcp' -> is_tcp = 1)
+
 
 import numpy as np
 import csv
@@ -23,8 +25,19 @@ def main():
     TRAINING_FILE_FULL = 'KDDTrain+.txt'
     TEST_FILE = 'KDDTest+.txt'
 
-    the_training_set = csv_to_array(TRAINING_FILE_FULL)
-    the_test_set = csv_to_array(TEST_FILE)
+
+    training_file = np.array(simple_csv_to_array(TRAINING_FILE_FULL))
+    label_lookups = {}
+    for i in range(0,len(training_file[0])):
+        try:
+            np.float32(training_file[0][i])
+        except ValueError as e:
+            label_lookups[i] = map_for_labels(training_file[:,i])
+            # detected non-numeric value, make a value->number map
+    print(str(label_lookups))
+
+    the_training_set = binarize_array(TRAINING_FILE_FULL)
+    the_test_set = binarize_array(TEST_FILE)
 
     unit_trials = []
     unit_trials.append([41])
@@ -59,7 +72,6 @@ def run_dnn_with_units_steps(training_set,test_set,units_array,num_steps):
     print('DNN with hidden units: ' + str(units_array))
     print('Number of steps: ' + str(num_steps))
     print('Seconds elapsed: {}'.format(stop - start))
-
     accuracy_stuff = classifier.evaluate(x=x_test, y=y_test)
     print('Accuracy: {0:f}'.format(accuracy_stuff['accuracy']))
     print('Other stuff: ' + str(accuracy_stuff))
@@ -69,8 +81,55 @@ def run_dnn_with_units_steps(training_set,test_set,units_array,num_steps):
 
 
 
+def simple_csv_to_array(csv_file):
+    to_return = []
+    packets = csv.reader(open(csv_file), delimiter=',',dialect=csv.excel_tab)
+    for packet in packets:
+        tmp = []
+        for feature_index in range(0,len(packet)):
+            tmp.append(packet[feature_index])
+        to_return.append(tmp)
+    return to_return
 
-def csv_to_array(csv_file):
+
+
+
+def binarize_array(raw_array,label_lookups):
+    features = []
+    labels = []
+
+    for packet in raw_array:
+        tmp = []
+        for feature_index in range(0,len(packet)):
+            if feature_index in label_lookups:
+                binarize = [np.float32(0.0)]*len(label_lookups[feature_index])
+                binarize[label_lookups[packet[feature_index]]] = np.float32(1.0)
+                tmp.append(np.float32(binarize))
+            else:
+                tmp.append(np.float32(packet[feature_index]))
+        # Final item - don't know what it is, but it comes after the label
+        del tmp[len(tmp)-1]
+        label = tmp.pop()
+        if not label == 'normal':
+            # which group does the label belong to
+            label = label_groups[label]
+        # what is the number label for that group
+        label_number = label_numbers[label]
+
+        # make all non-normal packets anomalies
+        if label_number != 0: label_number = 1
+
+        features.append(np.array(tmp))
+        labels.append(np.int(label_number))
+
+    features = np.array(features)
+    labels = np.array(labels)
+    return Dataset(features,labels)
+
+
+
+
+def kdd_csv_to_array(csv_file):
     packets = csv.reader(open(csv_file), delimiter=',',dialect=csv.excel_tab)
 
     protocol_map = {}
@@ -113,15 +172,32 @@ def csv_to_array(csv_file):
 
     labels = np.array(labels)
     features = np.array(features)
+    print("Protocols:")
+    print(str(protocol_map))
+    print("Services:")
+    print(str(service_map))
+    print("Flags:")
+    print(str(flag_map))
     return (Dataset(features,labels))
 
 
+
+
+def map_for_labels(labels):
+    # given a list of values, return a map of label->val
+    # i.e. {'tcp':0,'ftp':1,etc}
+    to_return = {}
+    for label in labels:
+        generate_number(label,to_return)
+    return to_return
 
 
 
 def generate_number(the_str,the_map):
     # Create numeric labels for strings using a given map
     # i.e. the_map = {'tcp':0,'ftp':1,etc}
+    #      the_str = 'ftp'
+    #      returns 1 
 
     if not the_str in the_map:
         the_map[the_str] = len(the_map.keys())
@@ -132,52 +208,54 @@ def generate_number(the_str,the_map):
 
 def feature_names(): 
     return [
+        # c = continuous feature
+        # d = discrete feature
         # basic features (0-8)
-        'duration',
-        'protocol_type',
-        'service',
-        'flag',
-        'src_bytes',
-        'dst_bytes',
-        'land',
-        'wrong_fragment',
-        'urgent',
+        {'name':'duration','type':'c'},
+        {'name':'protocol_type','type':'d'},
+        {'name':'service','type':'d'},
+        {'name':'flag','type':'d'},
+        {'name':'src_bytes','type':'c'},
+        {'name':'dst_bytes','type':'c'},
+        {'name':'land','type':'d'},
+        {'name':'wrong_fragment','type':'c'},
+        {'name':'urgent','type':'c'},
         # content related features (9-21)
-        'hot',
-        'num_failed_logins',
-        'logged_in',
-        'num_compromised',
-        'root_shell',
-        'su_attempted',
-        'num_root',
-        'num_file_creations',
-        'num_shells',
-        'num_access_files',
-        'num_outbound_cmds',
-        'is_hot_login',
-        'is_guest_login',
+        {'name':'hot','type':'c'},
+        {'name':'num_failed_logins','type':'c'},
+        {'name':'logged_in','type':'d'},
+        {'name':'num_compromised','type':'c'},
+        {'name':'root_shell','type':'d'},
+        {'name':'su_attempted','type':'d'},
+        {'name':'num_root','type':'c'},
+        {'name':'num_file_creations','type':'c'},
+        {'name':'num_shells','type':'c'},
+        {'name':'num_access_files','type':'c'},
+        {'name':'num_outbound_cmds','type':'c'},
+        {'name':'is_hot_login','type':'d'},
+        {'name':'is_guest_login','type':'d'},
         # time related attributes (22-30)
-        'count',
-        'srv_count',
-        'serror_rate',
-        'srv_serror_rate',
-        'rerror_rate',
-        'srv_rerror_rate',
-        'same_srv_rate',
-        'diff_srv_rate',
-        'srv_diff_host_rate',
+        {'name':'count','type':'d'},
+        {'name':'srv_count','type':'d'},
+        {'name':'serror_rate','type':'c'},
+        {'name':'srv_serror_rate','type':'c'},
+        {'name':'rerror_rate','type':'c'},
+        {'name':'srv_rerror_rate','type':'c'},
+        {'name':'same_srv_rate','type':'c'},
+        {'name':'diff_srv_rate','type':'c'},
+        {'name':'srv_diff_host_rate','type':'c'},
         # host based traffic features (31-40)
-        'dst_host_count',
-        'dst_host_srv_count',
-        'dst_host_same_srv_rate',
-        'dst_host_diff_srv_rate',
-        'dst_host_same_src_port_rate',
-        'dst_host_srv_diff_host_rate',
-        'dst_host_serror_rate',
-        'dst_host_srv_serror_rate',
-        'dst_host_rerror_rate',
-        'dst_host_rerror_rate',
-        'dst_host_srv_rerror_rate'
+        {'name':'dst_host_count','type':'d'},
+        {'name':'dst_host_srv_count','type':'d'},
+        {'name':'dst_host_same_srv_rate','type':'c'},
+        {'name':'dst_host_diff_srv_rate','type':'c'},
+        {'name':'dst_host_same_src_port_rate','type':'c'},
+        {'name':'dst_host_srv_diff_host_rate','type':'c'},
+        {'name':'dst_host_serror_rate','type':'c'},
+        {'name':'dst_host_srv_serror_rate','type':'c'},
+        {'name':'dst_host_rerror_rate','type':'c'},
+        {'name':'dst_host_rerror_rate','type':'c'},
+        {'name':'dst_host_srv_rerror_rate','type':'c'}
     ]
 
 
