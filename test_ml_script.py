@@ -47,7 +47,7 @@ def run_dnn_with_units(training_set,test_set,units_array):
     #Build a DNN!
     start = time.clock()
     classifier = tf.contrib.learn.DNNClassifier(hidden_units=units_array)
-    classifier.fit(x=x_train, y=y_train, steps=300)
+    classifier.fit(x=x_train, y=y_train, steps=200)
     stop = time.clock()
     print('-------------------------------------')
     print('DNN with hidden units: ' + str(units_array))
