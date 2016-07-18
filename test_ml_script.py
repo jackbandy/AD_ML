@@ -27,17 +27,37 @@ def main():
 
 
     training_file = np.array(simple_csv_to_array(TRAINING_FILE_FULL))
-    label_lookups = {}
+    testing_file = np.array(simple_csv_to_array(TEST_FILE))
+    columns = len(training_file[0])
+    # Delete the last column
+    training_file = np.delete(training_file,columns-1,1)
+    testing_file = np.delete(testing_file,columns-1,1)
+
+    training_labels = training_file[:,columns-2]
+    testing_labels = testing_file[:,columns-2]
+    training_features = np.delete(training_file,columns-2,1)
+    testing_features = np.delete(testing_file,columns-2,1)
+
+
+    feature_lookups = {}
     for i in range(0,len(training_file[0])):
         try:
             np.float32(training_file[0][i])
         except ValueError as e:
-            label_lookups[i] = map_for_labels(training_file[:,i])
+            feature_lookups[i] = map_for_labels(training_file[:,i])
             # detected non-numeric value, make a value->number map
-    print(str(label_lookups))
+    print(str(feature_lookups))
 
-    the_training_set = binarize_array(TRAINING_FILE_FULL)
-    the_test_set = binarize_array(TEST_FILE)
+    label_lookups = get_label_groups()
+
+
+    training_features = binarize_features(training_file,feature_lookups)
+    test_features = binarize_features(testing_file,feature_lookups)
+    training_labels = binarize_labels(training_labels,label_lookups)
+    test_labels = binarize_labels(testing_labels,label_lookups)
+
+    the_training_set = Dataset(training_features,training_labels)
+    the_test_set = Dataset(test_features,test_labels)
 
     unit_trials = []
     unit_trials.append([41])
@@ -93,38 +113,44 @@ def simple_csv_to_array(csv_file):
 
 
 
-
-def binarize_array(raw_array,label_lookups):
-    features = []
+def binarize_labels(raw_labels,label_lookups):
     labels = []
+    # Figure out which group it falls into
+    for label in raw_labels:
+        if not label == 'normal':
+            label = label_lookups[label]
+        label_number = label_numbers[label]
+        # Make all non-normal packets anomalies
+        # Just for now :)
+        if label_number != 0: label_number = 1
+        labels.append(np.int(label_number))
+
+    return np.array(labels)
+    
+
+
+
+def binarize_features(raw_array,label_lookups):
+    features = []
 
     for packet in raw_array:
         tmp = []
         for feature_index in range(0,len(packet)):
-            if feature_index in label_lookups:
+            if feature_index in label_lookups.keys():
                 binarize = [np.float32(0.0)]*len(label_lookups[feature_index])
-                binarize[label_lookups[packet[feature_index]]] = np.float32(1.0)
-                tmp.append(np.float32(binarize))
+                label = packet[feature_index]
+                if(label_lookups[feature_index].get(label)):
+                    binarize[label_lookups[feature_index][label]] = np.float32(1.0)
+                tmp.extend(binarize)
             else:
                 tmp.append(np.float32(packet[feature_index]))
-        # Final item - don't know what it is, but it comes after the label
-        del tmp[len(tmp)-1]
-        label = tmp.pop()
-        if not label == 'normal':
-            # which group does the label belong to
-            label = label_groups[label]
-        # what is the number label for that group
-        label_number = label_numbers[label]
-
-        # make all non-normal packets anomalies
-        if label_number != 0: label_number = 1
 
         features.append(np.array(tmp))
-        labels.append(np.int(label_number))
+
 
     features = np.array(features)
-    labels = np.array(labels)
-    return Dataset(features,labels)
+    return features
+    
 
 
 
