@@ -27,10 +27,10 @@ def main():
     the_test_set = csv_to_array(TEST_FILE)
 
     unit_trials = []
-    unit_trials.append([41,1])
-    unit_trials.append([41,40,40,1])
-    unit_trials.append([41,20,20,20,1])
-    unit_trials.append([41,25,20,1])
+    unit_trials.append([41])
+    unit_trials.append([41,40,40])
+    unit_trials.append([41,20,20,20])
+    unit_trials.append([41,25,20])
 
     for trial in unit_trials:
         run_dnn_with_units(the_training_set,the_test_set,trial)
