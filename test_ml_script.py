@@ -3,8 +3,6 @@
 __author__ = "Jack Bandy"
 __email__ = "jaxterb@gmail.com"
 
-#TODO: make categorical labels into binary labels (ex. 'tcp' -> is_tcp = 1)
-
 
 import numpy as np
 import csv
@@ -16,29 +14,36 @@ import tensorflow as tf
 Dataset = collections.namedtuple('Dataset', ['data', 'target'])
 label_numbers = {'normal':0,'dos':1,'probe':2,'u2r':3,'r2l':4}
 
+TRAINING_FILE_20P = '20 Percent Training Set.csv'
+TRAINING_FILE_SMALL = 'Small Training Set.csv'
+TRAINING_FILE_FULL = 'KDDTrain+.txt'
+TEST_FILE = 'KDDTest+.txt'
 
 
 def main():
-
-    TRAINING_FILE_20P = '20 Percent Training Set.csv'
-    TRAINING_FILE_SMALL = 'Small Training Set.csv'
-    TRAINING_FILE_FULL = 'KDDTrain+.txt'
-    TEST_FILE = 'KDDTest+.txt'
+    """The top-level brains of the operation"""
 
 
+    # Grab the raw data at face value
     training_file = np.array(simple_csv_to_array(TRAINING_FILE_FULL))
     testing_file = np.array(simple_csv_to_array(TEST_FILE))
+    # Determine the number of columns
     columns = len(training_file[0])
     # Delete the last column
     training_file = np.delete(training_file,columns-1,1)
     testing_file = np.delete(testing_file,columns-1,1)
 
+
+    # Separate labels and features
     training_labels = training_file[:,columns-2]
     testing_labels = testing_file[:,columns-2]
     training_features = np.delete(training_file,columns-2,1)
     testing_features = np.delete(testing_file,columns-2,1)
 
 
+    # Determine which features need lookups
+    # that is, which features are qualitative
+    # ex. 'tcp'
     feature_lookups = {}
     for i in range(0,len(training_file[0])):
         try:
@@ -48,9 +53,14 @@ def main():
             # detected non-numeric value, make a value->number map
     print(str(feature_lookups))
 
+    # Do the same thing for labels, only use the hard-coded map
     label_lookups = get_label_groups()
 
 
+    # Using the lookup maps, make fully-quantitative features/labels
+    # for example, tcp becomes a binarized array in the features array
+    # ex. 'tcp' -> [0.0,1.0,...]
+    #              [is_udp,is_tcp,...]
     training_features = binarize_features(training_file,feature_lookups)
     test_features = binarize_features(testing_file,feature_lookups)
     training_labels = binarize_labels(training_labels,label_lookups)
@@ -58,21 +68,28 @@ def main():
     print("NUMBER OF FEATURES AFTER BINARIZATION:")
     print(len(training_features[0]))
 
+
+    # Group features and datasets
     the_training_set = Dataset(training_features,training_labels)
     the_test_set = Dataset(test_features,test_labels)
 
+
+    # Tweaks for machine learning
+    # What hidden layers to use
+    # ex. [20,40] = two layers with 20 and 40 nodes, respectively
     num_features = len(training_features[0])
     unit_trials = []
-    unit_trials.append([num_features])
-    unit_trials.append([num_features,40,40])
-    unit_trials.append([num_features,20,20,20])
-    unit_trials.append([num_features,25,20])
+    unit_trials.append([num_features]) #baseline
+    unit_trials.append([num_features,2*num_features])
+    unit_trials.append([num_features,2*num_features,num_features])
 
+    # How many training steps to use
     step_trials = []
+    step_trials.append(100)
     step_trials.append(200)
     step_trials.append(300)
-    step_trials.append(400)
 
+    # Run the dnn with every possible configuration
     for trial in unit_trials:
         for num_steps in step_trials:
             run_dnn_with_units_steps(the_training_set,the_test_set,trial,num_steps)
@@ -82,16 +99,20 @@ def main():
 
 
 def run_dnn_with_units_steps(training_set,test_set,units_array,num_steps):
+    """Build,train,test,print the results of a DNN"""
+
     # as per tensorflow's recommendation / sample code
     x_train, x_test, y_train, y_test = training_set.data, test_set.data, \
               training_set.target, test_set.target
+
 
     #Build a DNN!
     start = time.clock()
     classifier = tf.contrib.learn.DNNClassifier(hidden_units=units_array)
     classifier.fit(x=x_train, y=y_train, steps=num_steps)
     stop = time.clock()
-    print('-------------------------------------')
+    print('---------------------------------------------')
+
     print('DNN with hidden units: ' + str(units_array))
     print('Number of steps: ' + str(num_steps))
     print('Seconds elapsed: {}'.format(stop - start))
@@ -99,12 +120,18 @@ def run_dnn_with_units_steps(training_set,test_set,units_array,num_steps):
     print('Accuracy: {0:f}'.format(accuracy_stuff['accuracy']))
     print('Other stuff: ' + str(accuracy_stuff))
 
-    print('-------------------------------------')
+    print('---------------------------------------------')
 
 
 
 
 def simple_csv_to_array(csv_file):
+    """Make an array from a csv file.
+
+    Keyword arguments:
+    csv_file -- the name of the file to use
+    """
+
     to_return = []
     packets = csv.reader(open(csv_file), delimiter=',',dialect=csv.excel_tab)
     for packet in packets:
@@ -116,7 +143,15 @@ def simple_csv_to_array(csv_file):
 
 
 
+
 def binarize_labels(raw_labels,label_lookups):
+    """Turn labels into numbers.
+    
+    Keyword arguments:
+    raw_labels -- the qualitative labels
+    label_lookups -- the conversion map (label -> number)
+    """
+
     labels = []
     # Figure out which group it falls into
     for label in raw_labels:
@@ -133,17 +168,29 @@ def binarize_labels(raw_labels,label_lookups):
 
 
 
-def binarize_features(raw_array,label_lookups):
+def binarize_features(raw_features,conversion_lookups):
+    """Turn features into numbers.
+
+    Keyword arguments:
+    raw_features -- 2d array of features
+    conversion_lookups -- a map of conversion maps
+
+    The keys in the conversion are the indices of qualitative labels
+    ex. {'1':{'tcp':1,'udp':0}}
+    means that column 1 is qualitative, so if the feature is 'tcp'
+    make an array [0.0,1.0]
+
+    """
     features = []
 
-    for packet in raw_array:
+    for packet in raw_features:
         tmp = []
         for feature_index in range(0,len(packet)):
-            if feature_index in label_lookups.keys():
-                binarize = [np.float32(0.0)]*len(label_lookups[feature_index])
+            if feature_index in conversion_lookups.keys():
+                binarize = [np.float32(0.0)]*len(conversion_lookups[feature_index])
                 label = packet[feature_index]
-                if(label_lookups[feature_index].get(label)):
-                    binarize[label_lookups[feature_index][label]] = np.float32(1.0)
+                if(conversion_lookups[feature_index].get(label)):
+                    binarize[conversion_lookups[feature_index][label]] = np.float32(1.0)
                 tmp.extend(binarize)
             else:
                 tmp.append(np.float32(packet[feature_index]))
@@ -159,6 +206,7 @@ def binarize_features(raw_array,label_lookups):
 
 
 def kdd_csv_to_array(csv_file):
+    """Old, messy, incohesive, tightly-coupled script """
     packets = csv.reader(open(csv_file), delimiter=',',dialect=csv.excel_tab)
 
     protocol_map = {}
@@ -213,8 +261,9 @@ def kdd_csv_to_array(csv_file):
 
 
 def map_for_labels(labels):
-    # given a list of values, return a map of label->val
-    # i.e. {'tcp':0,'ftp':1,etc}
+    """ given a list of values, return a map of label->val
+    i.e. {'tcp':0,'ftp':1,etc}
+    """
     to_return = {}
     for label in labels:
         generate_number(label,to_return)
@@ -223,10 +272,11 @@ def map_for_labels(labels):
 
 
 def generate_number(the_str,the_map):
-    # Create numeric labels for strings using a given map
-    # i.e. the_map = {'tcp':0,'ftp':1,etc}
-    #      the_str = 'ftp'
-    #      returns 1 
+    """ Create numeric labels for strings using a given map
+     i.e. the_map = {'tcp':0,'ftp':1,etc}
+          the_str = 'ftp'
+          returns 1 
+    """
 
     if not the_str in the_map:
         the_map[the_str] = len(the_map.keys())
@@ -236,6 +286,8 @@ def generate_number(the_str,the_map):
 
 
 def feature_names(): 
+    """An array of the KDD features, represented as dictionaries"""
+
     return [
         # c = continuous feature
         # d = discrete feature
@@ -290,6 +342,8 @@ def feature_names():
 
 
 def get_label_groups():
+    """ The label groups for types of attacks"""
+
     return  {	    # denial of service attacks
 					'back':'dos',
 					'land':'dos',
@@ -342,4 +396,7 @@ def get_label_groups():
 
 
 if __name__ == '__main__':
+    """If the script is called, run main"""
     main()
+
+
