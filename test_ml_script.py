@@ -8,6 +8,7 @@ import numpy as np
 import csv
 import collections
 import time
+from sklearn.metrics import classification_report
 # Let the tensors flow
 import tensorflow as tf
 
@@ -51,7 +52,7 @@ def main():
         except ValueError as e:
             feature_lookups[i] = map_for_labels(training_file[:,i])
             # detected non-numeric value, make a value->number map
-    print(str(feature_lookups))
+    # print(str(feature_lookups))
 
     # Do the same thing for labels, only use the hard-coded map
     label_lookups = get_label_groups()
@@ -81,13 +82,13 @@ def main():
     unit_trials = []
     unit_trials.append([num_features]) #baseline
     unit_trials.append([num_features,2*num_features])
-    unit_trials.append([num_features,2*num_features,num_features])
+    #unit_trials.append([num_features,2*num_features,num_features])
 
     # How many training steps to use
     step_trials = []
     step_trials.append(100)
     step_trials.append(200)
-    step_trials.append(300)
+    #step_trials.append(300)
 
     # Run the dnn with every possible configuration
     for trial in unit_trials:
@@ -110,16 +111,14 @@ def run_dnn_with_units_steps(training_set,test_set,units_array,num_steps):
     start = time.clock()
     classifier = tf.contrib.learn.DNNClassifier(hidden_units=units_array)
     classifier.fit(x=x_train, y=y_train, steps=num_steps)
+    test_pred = classifier.predict(x_test)
     stop = time.clock()
     print('---------------------------------------------')
 
     print('DNN with hidden units: ' + str(units_array))
     print('Number of steps: ' + str(num_steps))
     print('Seconds elapsed: {}'.format(stop - start))
-    accuracy_stuff = classifier.evaluate(x=x_test, y=y_test)
-    print('Accuracy: {0:f}'.format(accuracy_stuff['accuracy']))
-    print('Other stuff: ' + str(accuracy_stuff))
-
+    print(classification_report(y_test,test_pred))
     print('---------------------------------------------')
 
 
@@ -162,7 +161,8 @@ def binarize_labels(raw_labels,label_lookups):
         # Just for now :)
         if label_number != 0: label_number = 1
         labels.append(np.int(label_number))
-
+        if label_number != 1 and label_number != 0:
+            print("DANG")
     return np.array(labels)
     
 
@@ -210,11 +210,11 @@ def map_for_labels(labels):
     """ given a list of values, return a map of label->val
     i.e. {'tcp':0,'ftp':1,etc}
     """
-    to_return = {}
+    the_map = {}
     for label in labels:
-    	if not label in to_return:
-        	the_map[the_str] = len(the_map.keys())
-    return to_return
+    	if not label in the_map:
+        	the_map[label] = len(the_map.keys())
+    return the_map
 
 
 
