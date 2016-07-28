@@ -20,9 +20,9 @@ TRAINING_FILE_FULL = 'KDDTrain+.txt'
 TEST_FILE = 'KDDTest+.txt'
 
 
+
 def main():
     """The top-level brains of the operation"""
-
 
     # Grab the raw data at face value
     training_file = np.array(simple_csv_to_array(TRAINING_FILE_FULL))
@@ -169,7 +169,7 @@ def binarize_labels(raw_labels,label_lookups):
 
 
 def binarize_features(raw_features,conversion_lookups):
-    """Turn features into numbers.
+    """Turn qualitative features into numbers.
 
     Keyword arguments:
     raw_features -- 2d array of features
@@ -178,7 +178,7 @@ def binarize_features(raw_features,conversion_lookups):
     The keys in the conversion are the indices of qualitative labels
     ex. {'1':{'tcp':1,'udp':0}}
     means that column 1 is qualitative, so if the feature is 'tcp'
-    make an array [0.0,1.0]
+    make an array [0.0,1.0], can be thought of as [is_udp, is_tcp]
 
     """
     features = []
@@ -188,75 +188,21 @@ def binarize_features(raw_features,conversion_lookups):
         for feature_index in range(0,len(packet)):
             if feature_index in conversion_lookups.keys():
                 binarize = [np.float32(0.0)]*len(conversion_lookups[feature_index])
-                label = packet[feature_index]
+                # length of binarize is how many possible qualitative features
+                label = packet[feature_index] # ex. 'tcp'
                 if(conversion_lookups[feature_index].get(label)):
                     binarize[conversion_lookups[feature_index][label]] = np.float32(1.0)
+                    #        --------    map    -------------
+                    #										  --key--
+                    #        --------- index -------------------------
                 tmp.extend(binarize)
             else:
                 tmp.append(np.float32(packet[feature_index]))
 
         features.append(np.array(tmp))
 
-
     features = np.array(features)
     return features
-    
-
-
-
-
-def kdd_csv_to_array(csv_file):
-    """Old, messy, incohesive, tightly-coupled script """
-    packets = csv.reader(open(csv_file), delimiter=',',dialect=csv.excel_tab)
-
-    protocol_map = {}
-    service_map = {}
-    flag_map = {}
-
-    labels = []
-    features = []
-
-    label_groups = get_label_groups()
-
-    for packet in packets:
-        tmp = []
-        for feature_index in range(0,len(packet)):
-            if feature_index is 1:
-                # Handle protocol numbering
-                tmp.append(np.float32(generate_number(packet[1],protocol_map)))
-            elif feature_index is 2:
-                # Handle service numbering
-                tmp.append(np.float32(generate_number(packet[2],service_map)))
-            elif feature_index is 3:
-                # Handle flag numbering
-                tmp.append(np.float32(generate_number(packet[3],flag_map)))
-            else:
-                tmp.append(packet[feature_index])
-        # Last item in the list is unneeded
-        del tmp[len(tmp)-1]
-        # Second-to-last-item is the label
-        label = tmp.pop()
-        # Figure out which group it falls into
-        if not label == 'normal':
-            label = label_groups[label]
-        label_number = label_numbers[label]
-
-        # Make all non-normal packets anomalies
-        if label_number != 0: label_number = 1
-
-        labels.append(np.int(label_number))
-        features.append(np.array(tmp))
-
-    labels = np.array(labels)
-    features = np.array(features)
-    print("Protocols:")
-    print(str(protocol_map))
-    print("Services:")
-    print(str(service_map))
-    print("Flags:")
-    print(str(flag_map))
-    return (Dataset(features,labels))
-
 
 
 
@@ -266,22 +212,9 @@ def map_for_labels(labels):
     """
     to_return = {}
     for label in labels:
-        generate_number(label,to_return)
+    	if not label in to_return:
+        	the_map[the_str] = len(the_map.keys())
     return to_return
-
-
-
-def generate_number(the_str,the_map):
-    """ Create numeric labels for strings using a given map
-     i.e. the_map = {'tcp':0,'ftp':1,etc}
-          the_str = 'ftp'
-          returns 1 
-    """
-
-    if not the_str in the_map:
-        the_map[the_str] = len(the_map.keys())
-    return the_map[the_str]
-
 
 
 
